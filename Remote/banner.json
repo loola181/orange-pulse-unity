@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "eyebrow": "SERVER PICK · JULY",
+  "title": "Пульс нового сезона",
+  "body": "Открой календарь Премьер-лиги и отметь главное событие недели.",
+  "button_label": "СМОТРЕТЬ КАЛЕНДАРЬ",
+  "button_url": "https://www.thesportsdb.com/league/4328-English-Premier-League",
+  "image_url": "https://raw.githubusercontent.com/loola181/orange-pulse-unity/main/Remote/banner.jpg"
+}
+
