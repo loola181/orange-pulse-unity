@@ -4,7 +4,7 @@ namespace OrangePulse.Core
     {
         public const string SportsApiRoot = "https://www.thesportsdb.com/api/v1/json/123";
         public const string CampaignConfig =
-            "https://raw.githubusercontent.com/loola181/orange-pulse-unity/main/Remote/banner.json";
+            "https://raw.githubusercontent.com/loola181/orange-pulse-unity/refs/heads/main/Remote/banner.json";
 
         public static readonly LeagueSource[] FeaturedLeagues =
         {
