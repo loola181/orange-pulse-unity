@@ -15,7 +15,7 @@
 
 ## Серверный баннер
 
-Приложение загружает [`Remote/banner.json`](Remote/banner.json) из ветки `main` этого репозитория.
+Приложение загружает [`Remote/campaign.json`](Remote/campaign.json) из ветки `main` этого репозитория.
 Поля `title`, `body`, `button_label`, `button_url`, `image_url` обновляются без выпуска нового APK.
 Чтобы временно скрыть блок, установите `enabled` в `false`.
 
@@ -57,4 +57,3 @@ Assets/OrangePulse/
 
 Выбранное фото копируется только в `Application.persistentDataPath` на устройстве.
 Проект не загружает аватар на сервер и не запрашивает прямой доступ ко всей медиатеке.
-
