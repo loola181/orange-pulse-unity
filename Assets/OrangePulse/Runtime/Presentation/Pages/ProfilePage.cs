@@ -19,7 +19,6 @@ namespace OrangePulse.Presentation.Pages
 
         private readonly VisualComposer _ui;
         private readonly Action _chooseImage;
-        private readonly Action _openPrivacyPolicy;
         private readonly Action<string> _saveName;
         private readonly Action<string> _saveLeague;
         private readonly Dictionary<string, Button> _leagueButtons = new();
@@ -41,11 +40,10 @@ namespace OrangePulse.Presentation.Pages
         private Sprite _runtimeAvatar;
 
         public ProfilePage(VisualComposer ui, Transform parent, Sprite defaultAvatar, Action chooseImage,
-            Action openPrivacyPolicy, Action<string> saveName, Action<string> saveLeague)
+            Action<string> saveName, Action<string> saveLeague)
         {
             _ui = ui;
             _chooseImage = chooseImage;
-            _openPrivacyPolicy = openPrivacyPolicy;
             _saveName = saveName;
             _saveLeague = saveLeague;
 
@@ -347,7 +345,7 @@ namespace OrangePulse.Presentation.Pages
         private void BuildPrinciples(RectTransform content)
         {
             Image card = _ui.Panel(content, "Principles", new Color(1f, 0.91f, 0.82f, 1f), true);
-            VisualComposer.Size(card.gameObject, 310f);
+            VisualComposer.Size(card.gameObject, 220f);
             Text title = _ui.Label(card.transform, "Title", "СПОРТ БЕЗ ЛИШНЕГО РИСКА", 28,
                 PulsePalette.Ink, TextAnchor.MiddleLeft, FontStyle.Bold);
             VisualComposer.SetAnchors(title.rectTransform, new Vector2(0f, 1f), Vector2.one,
@@ -356,11 +354,7 @@ namespace OrangePulse.Presentation.Pages
                 "Orange Football показывает спортивные данные и новости, но не принимает ставки и не обещает результат.",
                 23, PulsePalette.InkSoft, TextAnchor.UpperLeft);
             VisualComposer.SetAnchors(body.rectTransform, Vector2.zero, Vector2.one,
-                new Vector2(30f, 112f), new Vector2(-30f, -82f));
-            Button privacy = _ui.Button(card.transform, "PrivacyPolicy", "ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ",
-                PulsePalette.Ink, PulsePalette.White, 20, _openPrivacyPolicy);
-            VisualComposer.SetAnchors(privacy.GetComponent<RectTransform>(), Vector2.zero, new Vector2(1f, 0f),
-                new Vector2(30f, 24f), new Vector2(-30f, 94f));
+                new Vector2(30f, 22f), new Vector2(-30f, -82f));
         }
     }
 }

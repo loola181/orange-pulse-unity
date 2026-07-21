@@ -5,8 +5,6 @@ namespace OrangePulse.Core
         public const string SportsApiRoot = "https://www.thesportsdb.com/api/v1/json/123";
         public const string FootballDataRoot =
             "https://europe-west1-fest-58d28.cloudfunctions.net/dataApi/football";
-        public const string PrivacyPolicyUrl =
-            "https://loola181.github.io/orange-pulse-unity/privacy-policy.html";
 
         public static readonly LeagueSource[] FeaturedLeagues =
         {
