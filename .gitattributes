@@ -1,0 +1,12 @@
+*.a filter=lfs diff=lfs merge=lfs -text
+*.aar filter=lfs diff=lfs merge=lfs -text
+*.bundle filter=lfs diff=lfs merge=lfs -text
+*.dll filter=lfs diff=lfs merge=lfs -text
+*.so filter=lfs diff=lfs merge=lfs -text
+*.srcaar filter=lfs diff=lfs merge=lfs -text
+
+*.yml text eol=lf
+*.yaml text eol=lf
+*.gradle text eol=lf
+*.properties text eol=lf
+*.cs text eol=lf

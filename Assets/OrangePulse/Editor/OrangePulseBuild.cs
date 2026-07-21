@@ -56,6 +56,46 @@ namespace OrangePulse.Editor
             Build("Build/OrangeFootball.apk", BuildOptions.None);
         }
 
+        public static void ExportAndroidProject()
+        {
+            Prepare();
+
+            const string exportDirectory = "ci/android-export";
+            if (Directory.Exists(exportDirectory)) Directory.Delete(exportDirectory, true);
+
+            string output = Path.GetFullPath(exportDirectory);
+            EditorUserBuildSettings.exportAsGoogleAndroidProject = true;
+            EditorUserBuildSettings.buildAppBundle = false;
+
+            try
+            {
+                var build = new BuildPlayerOptions
+                {
+                    scenes = new[] { ScenePath },
+                    locationPathName = output,
+                    target = BuildTarget.Android,
+                    targetGroup = BuildTargetGroup.Android,
+                    options = BuildOptions.AcceptExternalModificationsToPlayer
+                };
+
+                BuildSummary summary = BuildPipeline.BuildPlayer(build).summary;
+                if (summary.result != BuildResult.Succeeded)
+                {
+                    Debug.LogError($"[OrangePulseBuild] Android export failed: {summary.result}, errors={summary.totalErrors}");
+                    EditorApplication.Exit(1);
+                    return;
+                }
+
+                Debug.Log($"[OrangePulseBuild] Android export ready: {output}, bytes={summary.totalSize}");
+            }
+            finally
+            {
+                EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
+            }
+
+            EditorApplication.Exit(0);
+        }
+
         private static void Build(string relativeOutput, BuildOptions options)
         {
             string output = Path.GetFullPath(relativeOutput);

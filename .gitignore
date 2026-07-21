@@ -18,3 +18,12 @@ Recordings/
 *.aab
 *.keystore
 *.jks
+.gradle/
+local.properties
+.release-signing/
+ci/android-export/unityLibrary/src/main/Il2CppOutputProject/
+ci/android-export/unityLibrary/src/main/jniStaticLibs/
+ci/android-export/unityLibrary/src/main/jniLibs/arm64-v8a/libil2cpp.dbg.so
+ci/android-export/unityLibrary/src/main/jniLibs/arm64-v8a/libil2cpp.sym.so
+ci/android-export/unityLibrary/symbols/
+ci/android-export/unityLibrary/.cxx/

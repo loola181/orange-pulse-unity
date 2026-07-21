@@ -1,0 +1,129 @@
+name: Signed Android Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Version name, for example 1.5.0"
+        required: false
+        default: "1.5.0"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orange-football-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    name: Build signed APK and AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ORANGE_VERSION_NAME: ${{ inputs.version_name || '1.5.0' }}
+
+    steps:
+      - name: Checkout source and LFS objects
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Validate required release inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing required GitHub Actions secret: $name" >&2
+              exit 1
+            fi
+          done
+          test -s ci/android-export/unityLibrary/src/main/jniLibs/arm64-v8a/libil2cpp.so
+          file ci/android-export/unityLibrary/src/main/jniLibs/arm64-v8a/libil2cpp.so
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform, build tools and NDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018"
+          echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/27.2.12479018" >> "$GITHUB_ENV"
+          printf 'sdk.dir=%s\n' "$ANDROID_SDK_ROOT" > ci/android-export/local.properties
+
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+          cache-read-only: false
+
+      - name: Restore release signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/orange-football-signing"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/orange-football-signing/upload-keystore.jks"
+          chmod 600 "$RUNNER_TEMP/orange-football-signing/upload-keystore.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/orange-football-signing/upload-keystore.jks" >> "$GITHUB_ENV"
+          echo "ORANGE_VERSION_CODE=$((100000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
+      - name: Build signed release APK and AAB
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --stacktrace \
+            -p ci/android-export \
+            -x :unityLibrary:buildIl2Cpp \
+            :launcher:assembleRelease \
+            :launcher:bundleRelease
+
+      - name: Verify signatures and prepare artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="ci/android-export/launcher/build/outputs/apk/release/launcher-release.apk"
+          aab="ci/android-export/launcher/build/outputs/bundle/release/launcher-release.aab"
+          test -s "$apk"
+          test -s "$aab"
+
+          safe_version="$(printf '%s' "$ORANGE_VERSION_NAME" | tr -c 'A-Za-z0-9._-' '-')"
+          mkdir -p artifacts
+          cp "$apk" "artifacts/OrangeFootball-${safe_version}-release.apk"
+          cp "$aab" "artifacts/OrangeFootball-${safe_version}-release.aab"
+
+          apksigner="$(find "$ANDROID_SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -1)"
+          "$apksigner" verify --verbose --print-certs "artifacts/OrangeFootball-${safe_version}-release.apk" | tee artifacts/apk-signature.txt
+          jarsigner -verify "artifacts/OrangeFootball-${safe_version}-release.aab" | tee artifacts/aab-signature.txt
+          keytool -printcert -jarfile "artifacts/OrangeFootball-${safe_version}-release.aab" > artifacts/aab-certificate.txt
+          (cd artifacts && sha256sum *.apk *.aab > SHA256SUMS.txt)
+
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "commit=${GITHUB_SHA}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "version_name=${ORANGE_VERSION_NAME}"
+            echo "version_code=${ORANGE_VERSION_CODE}"
+          } > artifacts/build-manifest.txt
+
+      - name: Upload signed Android release
+        uses: actions/upload-artifact@v4
+        with:
+          name: orange-football-signed-release-${{ github.run_number }}
+          path: artifacts/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
