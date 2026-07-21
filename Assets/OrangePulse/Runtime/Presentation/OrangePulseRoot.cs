@@ -81,7 +81,7 @@ namespace OrangePulse.Presentation
             var cache = new DiskTextCache();
             _matches = new MatchFeedGateway(_transport, cache);
             _news = new NewsFeedGateway(_transport, cache);
-            _campaigns = new CampaignGateway(_transport, cache);
+            _campaigns = new CampaignGateway();
             _profiles = new ProfileStore();
             _images = new ImageVault();
 
@@ -279,4 +279,3 @@ namespace OrangePulse.Presentation
         };
     }
 }
-

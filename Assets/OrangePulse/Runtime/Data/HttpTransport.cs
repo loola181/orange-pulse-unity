@@ -13,7 +13,7 @@ namespace OrangePulse.Data
             using UnityWebRequest request = UnityWebRequest.Get(url);
             request.timeout = 18;
             request.SetRequestHeader("Accept", "application/json, application/xml, text/xml, */*");
-            request.SetRequestHeader("User-Agent", "OrangePulse/1.0 (Unity Android)");
+            request.SetRequestHeader("User-Agent", "OrangeFootball/1.0 (Unity Android)");
             yield return request.SendWebRequest();
 
             if (request.result == UnityWebRequest.Result.Success &&
@@ -33,7 +33,7 @@ namespace OrangePulse.Data
         {
             using UnityWebRequest request = UnityWebRequestTexture.GetTexture(url, true);
             request.timeout = 18;
-            request.SetRequestHeader("User-Agent", "OrangePulse/1.0 (Unity Android)");
+            request.SetRequestHeader("User-Agent", "OrangeFootball/1.0 (Unity Android)");
             yield return request.SendWebRequest();
 
             if (request.result == UnityWebRequest.Result.Success)
@@ -47,4 +47,3 @@ namespace OrangePulse.Data
         }
     }
 }
-

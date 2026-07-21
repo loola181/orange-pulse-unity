@@ -162,7 +162,7 @@ namespace OrangePulse.Presentation.Pages
                 new Vector2(32f, -78f), new Vector2(-32f, -22f));
 
             Text body = _ui.Label(card.transform, "Body",
-                "Orange Pulse показывает расписание и новости. Приложение не принимает ставки и не обещает результат.",
+                "Orange Football показывает расписание и новости. Приложение не принимает ставки и не обещает результат.",
                 27, PulsePalette.InkSoft, TextAnchor.UpperLeft);
             VisualComposer.SetAnchors(body.rectTransform, Vector2.zero, Vector2.one,
                 new Vector2(32f, 24f), new Vector2(-32f, -92f));

@@ -61,7 +61,7 @@ namespace OrangePulse.Presentation.Pages
             if (!show) return;
 
             _campaignEyebrow.text = string.IsNullOrWhiteSpace(campaign.Eyebrow)
-                ? "ORANGE PULSE"
+                ? "ORANGE FOOTBALL"
                 : campaign.Eyebrow.ToUpperInvariant();
             _campaignTitle.text = campaign.Title;
             _campaignBody.text = campaign.Body;
@@ -112,7 +112,7 @@ namespace OrangePulse.Presentation.Pages
             VisualComposer.SetAnchors(brand.rectTransform, Vector2.zero, Vector2.one,
                 new Vector2(42f, 42f), new Vector2(-520f, -22f));
 
-            Text pulse = _ui.Label(header.transform, "Pulse", "PULSE", 42, PulsePalette.Orange,
+            Text pulse = _ui.Label(header.transform, "Football", "FOOTBALL", 38, PulsePalette.Orange,
                 TextAnchor.MiddleLeft, FontStyle.Bold);
             VisualComposer.SetAnchors(pulse.rectTransform, Vector2.zero, Vector2.one,
                 new Vector2(232f, 42f), new Vector2(-330f, -22f));

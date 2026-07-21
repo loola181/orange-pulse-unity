@@ -1,5 +1,9 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Firebase;
+using Firebase.RemoteConfig;
 using OrangePulse.Core;
 using UnityEngine;
 
@@ -7,73 +11,133 @@ namespace OrangePulse.Data
 {
     public sealed class CampaignGateway
     {
-        private readonly HttpTransport _transport;
-        private readonly DiskTextCache _cache;
+        public const string EnabledKey = "orange_football_home_promo_enabled";
+        public const string LaunchEnabledKey = "orange_football_home_promo_launch_enabled";
+        public const string ClickActionKey = "orange_football_home_promo_click_action";
+        public const string ClickUrlKey = "orange_football_home_promo_click_url";
+        public const string ImageUrlKey = "orange_football_home_promo_image_url";
+        public const string ImageRevisionKey = "orange_football_home_promo_image_revision";
+        public const string TitleKey = "orange_football_home_promo_title";
+        public const string SubtitleKey = "orange_football_home_promo_subtitle";
+        public const string DisplayModeKey = "orange_football_home_promo_display_mode";
 
-        public CampaignGateway(HttpTransport transport, DiskTextCache cache)
-        {
-            _transport = transport;
-            _cache = cache;
-        }
+        private const string LeagueUrl =
+            "https://www.thesportsdb.com/league/4328-English-Premier-League";
+
+        private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(4);
 
         public IEnumerator Load(Action<LoadResult<Campaign>> finished)
         {
-            LoadResult<string> response = null;
-            yield return _transport.GetText(AppEndpoints.CampaignConfig, value => response = value);
+            Task<Campaign> operation = FetchCampaign();
+            while (!operation.IsCompleted) yield return null;
 
-            string payload;
-            bool fromCache = false;
-            if (response != null && response.IsSuccess)
+            if (operation.IsCanceled)
             {
-                payload = response.Data;
-                _cache.Put("campaign", payload);
-            }
-            else if (_cache.TryGet("campaign", TimeSpan.FromDays(14), out string cached))
-            {
-                payload = cached;
-                fromCache = true;
-            }
-            else
-            {
-                finished?.Invoke(LoadResult<Campaign>.Failed(response?.Error ?? "Баннер недоступен"));
+                finished?.Invoke(LoadResult<Campaign>.Failed("Загрузка баннера отменена"));
                 yield break;
             }
 
-            try
+            if (operation.IsFaulted)
             {
-                Campaign campaign = Parse(payload);
-                finished?.Invoke(fromCache
-                    ? LoadResult<Campaign>.Cached(campaign)
-                    : LoadResult<Campaign>.Fresh(campaign));
+                string message = operation.Exception?.GetBaseException().Message ?? "Баннер недоступен";
+                Debug.LogWarning($"[OrangeFootball] Remote Config unavailable: {message}");
+                finished?.Invoke(LoadResult<Campaign>.Failed(message));
+                yield break;
             }
-            catch (Exception exception)
-            {
-                finished?.Invoke(LoadResult<Campaign>.Failed(exception.Message));
-            }
+
+            finished?.Invoke(LoadResult<Campaign>.Fresh(operation.Result));
         }
 
-        public static Campaign Parse(string json)
+        public static Campaign MapValues(
+            bool enabled,
+            bool launchEnabled,
+            string clickAction,
+            string clickUrl,
+            string imageUrl,
+            string title,
+            string subtitle)
         {
-            CampaignDto source = JsonUtility.FromJson<CampaignDto>(json);
-            if (source == null) throw new FormatException("Пустая конфигурация баннера");
-            if (!IsSafeHttps(source.button_url)) throw new FormatException("Небезопасная ссылка баннера");
-            if (!string.IsNullOrWhiteSpace(source.image_url) && !IsSafeHttps(source.image_url))
-                throw new FormatException("Небезопасное изображение баннера");
+            string action = (clickAction ?? string.Empty).Trim().ToLowerInvariant();
+            string safeActionUrl = action == "url" && IsSafeHttps(clickUrl) ? clickUrl : LeagueUrl;
+            string safeImageUrl = IsSafeHttps(imageUrl) ? imageUrl : string.Empty;
 
             return new Campaign
             {
-                Enabled = source.enabled,
-                Eyebrow = source.eyebrow ?? string.Empty,
-                Title = source.title ?? string.Empty,
-                Body = source.body ?? string.Empty,
-                ButtonLabel = string.IsNullOrWhiteSpace(source.button_label) ? "ОТКРЫТЬ" : source.button_label,
-                ButtonUrl = source.button_url,
-                ImageUrl = source.image_url ?? string.Empty
+                Enabled = enabled && launchEnabled,
+                Eyebrow = "FIREBASE · LIVE",
+                Title = string.IsNullOrWhiteSpace(title) ? "Главный матч недели" : title.Trim(),
+                Body = string.IsNullOrWhiteSpace(subtitle)
+                    ? "Расписание и новости футбола в одном приложении."
+                    : subtitle.Trim(),
+                ButtonLabel = action == "url" ? "ОТКРЫТЬ" : "СМОТРЕТЬ МАТЧИ",
+                ButtonUrl = safeActionUrl,
+                ImageUrl = safeImageUrl
             };
+        }
+
+        private static async Task<Campaign> FetchCampaign()
+        {
+            DependencyStatus dependencies = await CompleteWithin(
+                FirebaseApp.CheckAndFixDependenciesAsync());
+            if (dependencies != DependencyStatus.Available)
+                throw new InvalidOperationException($"Firebase dependencies: {dependencies}");
+
+            FirebaseRemoteConfig config = FirebaseRemoteConfig.DefaultInstance;
+            await CompleteWithin(config.SetConfigSettingsAsync(new ConfigSettings
+            {
+                FetchTimeoutInMilliseconds = (ulong)OperationTimeout.TotalMilliseconds,
+                MinimumFetchIntervalInMilliseconds = 0
+            }));
+
+            await CompleteWithin(config.SetDefaultsAsync(DefaultValues()));
+            try
+            {
+                await CompleteWithin(config.FetchAsync(TimeSpan.Zero));
+                await CompleteWithin(config.ActivateAsync());
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"[OrangeFootball] Using cached banner values: {exception.Message}");
+            }
+
+            return MapValues(
+                config.GetValue(EnabledKey).BooleanValue,
+                config.GetValue(LaunchEnabledKey).BooleanValue,
+                config.GetValue(ClickActionKey).StringValue,
+                config.GetValue(ClickUrlKey).StringValue,
+                config.GetValue(ImageUrlKey).StringValue,
+                config.GetValue(TitleKey).StringValue,
+                config.GetValue(SubtitleKey).StringValue);
+        }
+
+        private static Dictionary<string, object> DefaultValues() => new()
+        {
+            { EnabledKey, true },
+            { LaunchEnabledKey, true },
+            { ClickActionKey, "url" },
+            { ClickUrlKey, LeagueUrl },
+            { ImageUrlKey, string.Empty },
+            { ImageRevisionKey, "builtin-v1" },
+            { TitleKey, "Главный матч недели" },
+            { SubtitleKey, "Расписание и новости футбола в одном приложении." },
+            { DisplayModeKey, "background" }
+        };
+
+        private static async Task CompleteWithin(Task operation)
+        {
+            Task winner = await Task.WhenAny(operation, Task.Delay(OperationTimeout));
+            if (!ReferenceEquals(winner, operation)) throw new TimeoutException("Firebase request timed out");
+            await operation;
+        }
+
+        private static async Task<T> CompleteWithin<T>(Task<T> operation)
+        {
+            Task winner = await Task.WhenAny(operation, Task.Delay(OperationTimeout));
+            if (!ReferenceEquals(winner, operation)) throw new TimeoutException("Firebase request timed out");
+            return await operation;
         }
 
         private static bool IsSafeHttps(string value) =>
             Uri.TryCreate(value, UriKind.Absolute, out Uri uri) && uri.Scheme == Uri.UriSchemeHttps;
     }
 }
-

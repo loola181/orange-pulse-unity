@@ -3,9 +3,6 @@ namespace OrangePulse.Core
     public static class AppEndpoints
     {
         public const string SportsApiRoot = "https://www.thesportsdb.com/api/v1/json/123";
-        public const string CampaignConfig =
-            "https://raw.githubusercontent.com/loola181/orange-pulse-unity/refs/heads/main/Remote/campaign.json";
-
         public static readonly LeagueSource[] FeaturedLeagues =
         {
             new("4328", "Премьер-лига", "ENG"),

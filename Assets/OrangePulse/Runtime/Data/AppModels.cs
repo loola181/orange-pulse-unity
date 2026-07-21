@@ -46,18 +46,6 @@ namespace OrangePulse.Data
         public DateTime PublishedUtc;
     }
 
-    [Serializable]
-    public sealed class CampaignDto
-    {
-        public bool enabled;
-        public string eyebrow;
-        public string title;
-        public string body;
-        public string button_label;
-        public string button_url;
-        public string image_url;
-    }
-
     public sealed class Campaign
     {
         public bool Enabled;
@@ -78,4 +66,3 @@ namespace OrangePulse.Data
         public int refreshedFeeds;
     }
 }
-

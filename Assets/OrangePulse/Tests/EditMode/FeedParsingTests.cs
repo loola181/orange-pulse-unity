@@ -33,25 +33,37 @@ namespace OrangePulse.Tests
         }
 
         [Test]
-        public void CampaignParserMapsServerPayload()
+        public void CampaignMapperUsesNamespacedRemoteValues()
         {
-            const string json = "{\"enabled\":true,\"eyebrow\":\"HOT\",\"title\":\"Final\"," +
-                "\"body\":\"Details\",\"button_label\":\"Open\"," +
-                "\"button_url\":\"https://example.com/event\"," +
-                "\"image_url\":\"https://example.com/banner.jpg\"}";
-
-            Campaign campaign = CampaignGateway.Parse(json);
+            Campaign campaign = CampaignGateway.MapValues(
+                true,
+                true,
+                "url",
+                "https://example.com/event",
+                "https://example.com/banner.jpg",
+                "Final",
+                "Details");
 
             Assert.That(campaign.Enabled, Is.True);
             Assert.That(campaign.Title, Is.EqualTo("Final"));
-            Assert.That(campaign.ButtonLabel, Is.EqualTo("Open"));
+            Assert.That(campaign.ButtonLabel, Is.EqualTo("ОТКРЫТЬ"));
+            Assert.That(campaign.ImageUrl, Is.EqualTo("https://example.com/banner.jpg"));
         }
 
         [Test]
-        public void CampaignParserRejectsInsecureAction()
+        public void CampaignMapperReplacesInsecureUrls()
         {
-            const string json = "{\"enabled\":true,\"button_url\":\"http://example.com\"}";
-            Assert.Throws<FormatException>(() => CampaignGateway.Parse(json));
+            Campaign campaign = CampaignGateway.MapValues(
+                true,
+                true,
+                "url",
+                "http://example.com",
+                "http://example.com/banner.jpg",
+                "Final",
+                "Details");
+
+            Assert.That(campaign.ButtonUrl, Does.StartWith("https://"));
+            Assert.That(campaign.ImageUrl, Is.Empty);
         }
 
         [Test]
@@ -63,4 +75,3 @@ namespace OrangePulse.Tests
         }
     }
 }
-

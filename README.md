@@ -1,4 +1,4 @@
-# Orange Pulse
+# Orange Football
 
 Самостоятельное мобильное приложение на Unity 6 для спортивного расписания и новостей.
 Проект создан с нуля и не использует исходники, пространства имён или архитектуру FutFest.
@@ -15,15 +15,14 @@
 
 ## Серверный баннер
 
-Приложение загружает [`Remote/campaign.json`](Remote/campaign.json) из ветки `main` этого репозитория.
-Поля `title`, `body`, `button_label`, `button_url`, `image_url` обновляются без выпуска нового APK.
-Чтобы временно скрыть блок, установите `enabled` в `false`.
+Приложение получает настройки баннера из Firebase Remote Config. Контент и CTA управляются
+через общую панель Promo Hub без выпуска нового APK.
 
 ## Источники данных
 
 - TheSportsDB v1: бесплатный ключ `123`, до 30 запросов в минуту;
 - BBC Sport RSS: заголовки открываются на исходной странице BBC;
-- удалённый баннер: GitHub Raw этого репозитория.
+- удалённый баннер: Firebase Remote Config и Firebase Storage.
 
 ## Сборка Android
 
@@ -37,8 +36,8 @@
   -logFile Build/unity-build.log
 ```
 
-APK создаётся в `Build/OrangePulse-dev.apk`. Идентификатор Android-приложения:
-`com.loola181.orangepulse`.
+APK создаётся в `Build/OrangeFootball-dev.apk`. Идентификатор Android-приложения:
+`com.loola181.orangefootball`.
 
 ## Структура
 

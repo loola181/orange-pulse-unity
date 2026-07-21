@@ -24,10 +24,10 @@ namespace OrangePulse.Editor
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
 
-            PlayerSettings.productName = "Orange Pulse";
-            PlayerSettings.companyName = "Orange Pulse Studio";
+            PlayerSettings.productName = "Orange Football";
+            PlayerSettings.companyName = "Orange Football Studio";
             PlayerSettings.bundleVersion = "1.0.0";
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.loola181.orangepulse");
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.loola181.orangefootball");
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
             PlayerSettings.statusBarHidden = false;
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;
@@ -47,13 +47,13 @@ namespace OrangePulse.Editor
         public static void BuildDevelopment()
         {
             Prepare();
-            Build("Build/OrangePulse-dev.apk", BuildOptions.Development | BuildOptions.AllowDebugging);
+            Build("Build/OrangeFootball-dev.apk", BuildOptions.Development | BuildOptions.AllowDebugging);
         }
 
         public static void BuildRelease()
         {
             Prepare();
-            Build("Build/OrangePulse.apk", BuildOptions.None);
+            Build("Build/OrangeFootball.apk", BuildOptions.None);
         }
 
         private static void Build(string relativeOutput, BuildOptions options)
