@@ -52,6 +52,7 @@ namespace OrangePulse.Tests
             Assert.That(campaign.ButtonLabel, Is.EqualTo("ОТКРЫТЬ"));
             Assert.That(campaign.ImageUrl, Is.EqualTo("https://example.com/banner.jpg"));
             Assert.That(campaign.DisplayMode, Is.EqualTo("full_banner"));
+            Assert.That(campaign.Eyebrow, Does.Not.Contain("FIREBASE"));
         }
 
         [Test]
@@ -78,7 +79,7 @@ namespace OrangePulse.Tests
                 "\"strAwayTeam\":\"Chelsea\",\"intHomeScore\":\"3\"," +
                 "\"intAwayScore\":\"1\",\"strStatus\":\"FT\"}]}";
 
-            var results = MatchResultsGateway.Parse(json, new LeagueSource("4328", "АПЛ", "ENG"));
+            var results = MatchResultsGateway.Parse(json, new LeagueSource("4328", "39", "АПЛ", "ENG"));
 
             Assert.That(results, Has.Count.EqualTo(1));
             Assert.That(results[0].HomeScore, Is.EqualTo(3));
@@ -89,17 +90,42 @@ namespace OrangePulse.Tests
         [Test]
         public void StandingsParserOrdersRowsByRank()
         {
-            const string json = "{\"table\":[" +
-                "{\"intRank\":\"2\",\"strTeam\":\"City\",\"intPlayed\":\"38\",\"intPoints\":\"78\"}," +
-                "{\"intRank\":\"1\",\"strTeam\":\"Arsenal\",\"intPlayed\":\"38\",\"intPoints\":\"85\"}]}";
+            const string json = "{\"get\":\"standings\",\"response\":[{\"league\":{\"standings\":[[" +
+                "{\"rank\":2,\"team\":{\"name\":\"City\",\"logo\":\"city.png\"}," +
+                "\"points\":78,\"goalsDiff\":42,\"all\":{\"played\":38,\"win\":23,\"draw\":9,\"lose\":6}}," +
+                "{\"rank\":1,\"team\":{\"name\":\"Arsenal\",\"logo\":\"arsenal.png\"}," +
+                "\"points\":85,\"goalsDiff\":44,\"all\":{\"played\":38,\"win\":26,\"draw\":7,\"lose\":5}}" +
+                "]]}}]}";
 
             var rows = StandingsGateway.Parse(json);
 
             Assert.That(rows, Has.Count.EqualTo(2));
             Assert.That(rows[0].Team, Is.EqualTo("Arsenal"));
             Assert.That(rows[0].Points, Is.EqualTo(85));
-            Assert.That(StandingsGateway.PreviousCompletedSeason(new DateTime(2026, 7, 21)),
-                Is.EqualTo("2025-2026"));
+            Assert.That(rows[0].Played, Is.EqualTo(38));
+            Assert.That(StandingsGateway.CompletedSeasonStartYear(new DateTime(2026, 7, 21)),
+                Is.EqualTo(2025));
+        }
+
+        [Test]
+        public void MatchFeedParserReadsAllUpcomingFixtures()
+        {
+            const string json = "{\"response\":[" +
+                "{\"fixture\":{\"id\":101,\"date\":\"2026-08-21T19:00:00+00:00\"," +
+                "\"venue\":{\"name\":\"Emirates Stadium\"}},\"league\":{\"name\":\"Premier League\"}," +
+                "\"teams\":{\"home\":{\"name\":\"Arsenal\",\"logo\":\"a.png\"}," +
+                "\"away\":{\"name\":\"Coventry\",\"logo\":\"c.png\"}}}," +
+                "{\"fixture\":{\"id\":102,\"date\":\"2026-08-22T11:30:00+00:00\"," +
+                "\"venue\":{\"name\":\"Craven Cottage\"}},\"league\":{\"name\":\"Premier League\"}," +
+                "\"teams\":{\"home\":{\"name\":\"Fulham\"},\"away\":{\"name\":\"Leeds\"}}}]}";
+
+            var matches = MatchFeedGateway.Parse(json,
+                new LeagueSource("4328", "39", "Премьер-лига", "ENG"));
+
+            Assert.That(matches, Has.Count.EqualTo(2));
+            Assert.That(matches[0].HomeTeam, Is.EqualTo("Arsenal"));
+            Assert.That(matches[1].Venue, Is.EqualTo("Craven Cottage"));
+            Assert.That(matches[0].KickoffUtc.Kind, Is.EqualTo(DateTimeKind.Utc));
         }
 
         [Test]

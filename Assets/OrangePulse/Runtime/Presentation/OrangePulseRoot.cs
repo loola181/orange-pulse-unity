@@ -12,6 +12,8 @@ namespace OrangePulse.Presentation
 {
     public sealed class OrangePulseRoot : MonoBehaviour
     {
+        private const float NavigationHeight = 136f;
+
         private enum AppTab
         {
             Pulse,
@@ -117,7 +119,7 @@ namespace OrangePulse.Presentation
 
             RectTransform pageHost = ui.Rect(safeArea, "PageHost");
             VisualComposer.SetAnchors(pageHost, Vector2.zero, Vector2.one,
-                new Vector2(0f, 112f), Vector2.zero);
+                new Vector2(0f, NavigationHeight), Vector2.zero);
 
             Texture2D heroTexture = Resources.Load<Texture2D>("hero-stadium");
             Texture2D iconTexture = Resources.Load<Texture2D>("app-icon");
@@ -142,11 +144,11 @@ namespace OrangePulse.Presentation
         {
             Image navigation = ui.Panel(safeArea, "Navigation", PulsePalette.Ink);
             VisualComposer.SetAnchors(navigation.rectTransform, Vector2.zero, new Vector2(1f, 0f),
-                Vector2.zero, new Vector2(0f, 112f));
+                Vector2.zero, new Vector2(0f, NavigationHeight));
 
             RectTransform row = ui.Rect(navigation.transform, "NavigationRow");
             VisualComposer.SetAnchors(row, Vector2.zero, Vector2.one,
-                new Vector2(22f, 10f), new Vector2(-22f, -10f));
+                new Vector2(16f, 12f), new Vector2(-16f, -12f));
             HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
             layout.spacing = 4f;
             layout.childControlWidth = true;
@@ -164,7 +166,7 @@ namespace OrangePulse.Presentation
         private void AddNavigationButton(VisualComposer ui, Transform parent, AppTab tab, string label)
         {
             Button button = ui.Button(parent, "Nav-" + tab, label, Color.clear,
-                PulsePalette.White, 19, () => ShowTab(tab), false);
+                PulsePalette.White, 21, () => ShowTab(tab), false);
             _navigation[tab] = button;
         }
 
@@ -195,6 +197,7 @@ namespace OrangePulse.Presentation
             _profiles.Save(_profile);
             _profilePage.SetProfile(_profile);
             StartCoroutine(LoadMatches());
+            StartCoroutine(LoadResults());
             StartCoroutine(LoadHomeCampaign());
         }
 
@@ -261,9 +264,11 @@ namespace OrangePulse.Presentation
             if (_resultsLoading) yield break;
             _resultsLoading = true;
             _resultsPage.ShowLoading();
+            _homePage.ShowResultsLoading();
             LoadResult<IReadOnlyList<MatchResult>> result = null;
             yield return _results.LoadFeatured(value => result = value);
             _resultsPage.Render(result);
+            _homePage.RenderRecentResults(result);
             _resultsLoading = false;
         }
 

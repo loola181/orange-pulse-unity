@@ -80,7 +80,7 @@ namespace OrangePulse.Data
             return new Campaign
             {
                 Enabled = enabled && launchEnabled,
-                Eyebrow = "FIREBASE · LIVE",
+                Eyebrow = "ГЛАВНОЕ · СЕГОДНЯ",
                 Title = string.IsNullOrWhiteSpace(title) ? "Главный матч недели" : title.Trim(),
                 Body = string.IsNullOrWhiteSpace(subtitle)
                     ? "Расписание и новости футбола в одном приложении."

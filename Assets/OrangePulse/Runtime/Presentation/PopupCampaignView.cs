@@ -97,7 +97,7 @@ namespace OrangePulse.Presentation
             VisualComposer.SetAnchors(copy.rectTransform, new Vector2(0f, lower), new Vector2(1f, upper),
                 Vector2.zero, Vector2.zero);
 
-            Text eyebrow = ui.Label(copy.transform, "Eyebrow", "ORANGE FOOTBALL · FIREBASE", 23,
+            Text eyebrow = ui.Label(copy.transform, "Eyebrow", "ORANGE FOOTBALL · MATCHDAY", 23,
                 PulsePalette.Orange, TextAnchor.MiddleLeft, FontStyle.Bold);
             VisualComposer.SetAnchors(eyebrow.rectTransform, new Vector2(0f, 0.78f), Vector2.one,
                 new Vector2(44f, 0f), new Vector2(-44f, 0f));

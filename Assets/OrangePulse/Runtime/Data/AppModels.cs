@@ -39,6 +39,54 @@ namespace OrangePulse.Data
         public DateTime KickoffUtc;
     }
 
+    [Serializable]
+    public sealed class FootballFixtureEnvelope
+    {
+        public FootballFixtureDto[] response;
+    }
+
+    [Serializable]
+    public sealed class FootballFixtureDto
+    {
+        public FootballFixtureInfo fixture;
+        public FootballLeagueInfo league;
+        public FootballTeamsDto teams;
+    }
+
+    [Serializable]
+    public sealed class FootballFixtureInfo
+    {
+        public long id;
+        public string date;
+        public FootballVenueDto venue;
+    }
+
+    [Serializable]
+    public sealed class FootballVenueDto
+    {
+        public string name;
+    }
+
+    [Serializable]
+    public sealed class FootballLeagueInfo
+    {
+        public string name;
+    }
+
+    [Serializable]
+    public sealed class FootballTeamsDto
+    {
+        public FootballTeamDto home;
+        public FootballTeamDto away;
+    }
+
+    [Serializable]
+    public sealed class FootballTeamDto
+    {
+        public string name;
+        public string logo;
+    }
+
     public sealed class MatchResult
     {
         public string Id;
@@ -83,6 +131,25 @@ namespace OrangePulse.Data
         public int Lost;
         public int GoalDifference;
         public int Points;
+    }
+
+    [Serializable]
+    public sealed class FootballStandingDto
+    {
+        public int rank;
+        public FootballTeamDto team;
+        public int points;
+        public int goalsDiff;
+        public FootballStandingStatsDto all;
+    }
+
+    [Serializable]
+    public sealed class FootballStandingStatsDto
+    {
+        public int played;
+        public int win;
+        public int draw;
+        public int lose;
     }
 
     public sealed class NewsStory

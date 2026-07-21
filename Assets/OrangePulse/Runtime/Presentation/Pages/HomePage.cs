@@ -14,7 +14,9 @@ namespace OrangePulse.Presentation.Pages
         private readonly Action _refresh;
         private readonly Action<string> _openExternal;
         private RectTransform _matchList;
+        private RectTransform _recentList;
         private Text _feedState;
+        private Text _recentState;
         private Image _campaignImage;
         private GameObject _campaignCard;
         private Text _campaignEyebrow;
@@ -50,8 +52,10 @@ namespace OrangePulse.Presentation.Pages
             ContentSizeFitter fitter = _matchList.gameObject.AddComponent<ContentSizeFitter>();
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
+            BuildRecentSection(content);
             BuildFootnote(content);
             ShowMatchLoading();
+            ShowResultsLoading();
         }
 
         public void SetCampaign(Campaign campaign)
@@ -99,6 +103,36 @@ namespace OrangePulse.Presentation.Pages
             _feedState.text = result.FromCache ? "СОХРАНЁННЫЕ ДАННЫЕ" : "ДАННЫЕ API · LIVE";
             _feedState.color = result.FromCache ? PulsePalette.Muted : PulsePalette.Success;
             foreach (MatchSummary match in result.Data) BuildMatch(match);
+        }
+
+        public void ShowResultsLoading()
+        {
+            _recentState.text = "ОБНОВЛЕНИЕ";
+            _recentState.color = PulsePalette.Orange;
+            Clear(_recentList);
+            Text placeholder = _ui.Label(_recentList, "Loading", "Проверяем последние результаты...", 27,
+                PulsePalette.Muted, TextAnchor.MiddleCenter);
+            VisualComposer.Size(placeholder.gameObject, 120f);
+        }
+
+        public void RenderRecentResults(LoadResult<IReadOnlyList<MatchResult>> result)
+        {
+            Clear(_recentList);
+            if (result == null || !result.IsSuccess || result.Data == null)
+            {
+                _recentState.text = "НЕДОСТУПНО";
+                _recentState.color = PulsePalette.Danger;
+                Text message = _ui.Label(_recentList, "Unavailable",
+                    "Последние результаты временно недоступны", 25,
+                    PulsePalette.Muted, TextAnchor.MiddleCenter);
+                VisualComposer.Size(message.gameObject, 110f);
+                return;
+            }
+
+            _recentState.text = result.FromCache ? "СОХРАНЕНО" : "ОБНОВЛЕНО";
+            _recentState.color = result.FromCache ? PulsePalette.Muted : PulsePalette.Success;
+            int count = Math.Min(result.Data.Count, 6);
+            for (int index = 0; index < count; index++) BuildRecentResult(result.Data[index]);
         }
 
         private void BuildHeader()
@@ -226,6 +260,59 @@ namespace OrangePulse.Presentation.Pages
                 new Vector2(34f, 16f), new Vector2(-28f, -156f));
         }
 
+        private void BuildRecentSection(RectTransform content)
+        {
+            RectTransform heading = _ui.FlowRow(content, "RecentHeading", 86f);
+            Text title = _ui.Label(heading, "Title", "НЕДАВНИЕ РЕЗУЛЬТАТЫ", 32, PulsePalette.Ink,
+                TextAnchor.MiddleLeft, FontStyle.Bold);
+            VisualComposer.Size(title.gameObject, 86f, -1f, 1f);
+            _recentState = _ui.Label(heading, "State", string.Empty, 20, PulsePalette.Success,
+                TextAnchor.MiddleRight, FontStyle.Bold);
+            VisualComposer.Size(_recentState.gameObject, 86f, 260f);
+
+            _recentList = _ui.Rect(content, "RecentList");
+            VerticalLayoutGroup layout = _recentList.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 14f;
+            layout.childControlHeight = true;
+            layout.childControlWidth = true;
+            layout.childForceExpandHeight = false;
+            layout.childForceExpandWidth = true;
+            ContentSizeFitter fitter = _recentList.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        }
+
+        private void BuildRecentResult(MatchResult match)
+        {
+            Image card = _ui.Panel(_recentList, "Recent-" + match.Id, PulsePalette.White, true);
+            VisualComposer.Size(card.gameObject, 178f);
+
+            Image stripe = _ui.Panel(card.transform, "Stripe", PulsePalette.Orange, true);
+            VisualComposer.SetAnchors(stripe.rectTransform, Vector2.zero, new Vector2(0f, 1f),
+                new Vector2(0f, 16f), new Vector2(9f, -16f));
+
+            Text league = _ui.Label(card.transform, "League", $"{match.Region}  ·  {match.League}", 19,
+                PulsePalette.Orange, TextAnchor.MiddleLeft, FontStyle.Bold);
+            VisualComposer.SetAnchors(league.rectTransform, new Vector2(0f, 1f), Vector2.one,
+                new Vector2(30f, -50f), new Vector2(-350f, -10f));
+
+            string date = match.PlayedUtc.ToLocalTime().ToString("dd MMM",
+                CultureInfo.GetCultureInfo("ru-RU")).ToUpperInvariant();
+            Text status = _ui.Label(card.transform, "Status", date + "  ·  " + match.Status, 19,
+                PulsePalette.Muted, TextAnchor.MiddleRight, FontStyle.Bold);
+            VisualComposer.SetAnchors(status.rectTransform, new Vector2(1f, 1f), Vector2.one,
+                new Vector2(-380f, -50f), new Vector2(-26f, -10f));
+
+            Text teams = _ui.Label(card.transform, "Teams", match.HomeTeam + "\n" + match.AwayTeam, 28,
+                PulsePalette.Ink, TextAnchor.MiddleLeft, FontStyle.Bold);
+            VisualComposer.SetAnchors(teams.rectTransform, Vector2.zero, Vector2.one,
+                new Vector2(30f, 18f), new Vector2(-250f, -56f));
+
+            Text score = _ui.Label(card.transform, "Score", $"{match.HomeScore}\n{match.AwayScore}", 31,
+                PulsePalette.Ink, TextAnchor.MiddleCenter, FontStyle.Bold);
+            VisualComposer.SetAnchors(score.rectTransform, new Vector2(1f, 0f), Vector2.one,
+                new Vector2(-220f, 18f), new Vector2(-26f, -56f));
+        }
+
         private void BuildError(string message)
         {
             Image card = _ui.Panel(_matchList, "Error", new Color(1f, 0.94f, 0.9f, 1f), true);
@@ -239,7 +326,7 @@ namespace OrangePulse.Presentation.Pages
         private void BuildFootnote(RectTransform content)
         {
             Text note = _ui.Label(content, "Footnote",
-                "РАСПИСАНИЕ: THESPORTSDB  ·  ВРЕМЯ ПО ЧАСОВОМУ ПОЯСУ УСТРОЙСТВА", 20,
+                "РАСПИСАНИЕ: API-FOOTBALL  ·  РЕЗУЛЬТАТЫ: THESPORTSDB", 20,
                 PulsePalette.Muted, TextAnchor.MiddleCenter, FontStyle.Bold);
             VisualComposer.Size(note.gameObject, 92f);
         }

@@ -90,7 +90,7 @@ namespace OrangePulse.Presentation.Pages
                 PulsePalette.White, TextAnchor.MiddleLeft, FontStyle.Bold);
             VisualComposer.SetAnchors(title.rectTransform, Vector2.zero, Vector2.one,
                 new Vector2(42f, 32f), new Vector2(-40f, -24f));
-            Text badge = _ui.Label(header.transform, "Badge", "TOP 5", 22,
+            Text badge = _ui.Label(header.transform, "Badge", "ВСЯ ЛИГА", 22,
                 PulsePalette.Orange, TextAnchor.MiddleRight, FontStyle.Bold);
             VisualComposer.SetAnchors(badge.rectTransform, new Vector2(1f, 0f), Vector2.one,
                 new Vector2(-220f, 32f), new Vector2(-42f, -24f));

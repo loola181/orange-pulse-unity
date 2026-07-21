@@ -3,23 +3,24 @@ namespace OrangePulse.Core
     public static class AppEndpoints
     {
         public const string SportsApiRoot = "https://www.thesportsdb.com/api/v1/json/123";
+        public const string FootballDataRoot =
+            "https://europe-west1-fest-58d28.cloudfunctions.net/dataApi/football";
+
         public static readonly LeagueSource[] FeaturedLeagues =
         {
-            new("4328", "Премьер-лига", "ENG"),
-            new("4335", "Ла Лига", "ESP"),
-            new("4331", "Бундеслига", "GER")
+            new("4328", "39", "Премьер-лига", "ENG"),
+            new("4335", "140", "Ла Лига", "ESP"),
+            new("4331", "78", "Бундеслига", "GER")
         };
 
-        public static string MatchesFor(string leagueId) =>
-            $"{SportsApiRoot}/eventsnextleague.php?id={leagueId}";
+        public static string UpcomingMatchesFor(string footballApiLeagueId, int count) =>
+            $"{FootballDataRoot}/fixtures?league={footballApiLeagueId}&next={count}";
 
         public static string ResultsFor(string leagueId) =>
             $"{SportsApiRoot}/eventspastleague.php?id={leagueId}";
 
-        public static string StandingsFor(string leagueId, string season = null) =>
-            string.IsNullOrWhiteSpace(season)
-                ? $"{SportsApiRoot}/lookuptable.php?l={leagueId}"
-                : $"{SportsApiRoot}/lookuptable.php?l={leagueId}&s={season}";
+        public static string StandingsFor(string footballApiLeagueId, int season) =>
+            $"{FootballDataRoot}/standings?league={footballApiLeagueId}&season={season}";
 
         public static string NewsFor(NewsSection section) => section switch
         {
@@ -33,12 +34,14 @@ namespace OrangePulse.Core
     public readonly struct LeagueSource
     {
         public readonly string Id;
+        public readonly string FootballApiId;
         public readonly string Name;
         public readonly string Region;
 
-        public LeagueSource(string id, string name, string region)
+        public LeagueSource(string id, string footballApiId, string name, string region)
         {
             Id = id;
+            FootballApiId = footballApiId;
             Name = name;
             Region = region;
         }
