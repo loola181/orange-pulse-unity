@@ -47,7 +47,7 @@
 ```
 
 APK создаётся в `Build/OrangeFootball-dev.apk`. Идентификатор Android-приложения:
-`com.loola181.orangefootball`.
+`app.orangefootball.fans`.
 
 ## Структура
 

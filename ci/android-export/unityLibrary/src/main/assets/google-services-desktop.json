@@ -7,41 +7,20 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1020548445977:android:789a56a163a9975fdc3788",
+        "mobilesdk_app_id": "1:1020548445977:android:2da3530752148aebdc3788",
         "android_client_info": {
-          "package_name": "app.fonfest.festival"
+          "package_name": "app.orangefootball.fans"
         }
       },
       "oauth_client": [
         {
-          "client_id": "1020548445977-tva4db6e48h9nbc529uiefso0eonfkp4.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCSO24apXCZvGQjUVYqBv3WiiOpbnEZsPo"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "1020548445977-tva4db6e48h9nbc529uiefso0eonfkp4.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:1020548445977:android:56288d8ed71e18eedc3788",
-        "android_client_info": {
-          "package_name": "com.loola181.orangefootball"
-        }
-      },
-      "oauth_client": [
+          "client_id": "1020548445977-0a8fp0c2iakkdiinatqe6cjh490bqv0o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.orangefootball.fans",
+            "certificate_hash": "ac2ffc68c2675c65f3b51a07904d5cd1fc5d8325"
+          }
+        },
         {
           "client_id": "1020548445977-tva4db6e48h9nbc529uiefso0eonfkp4.apps.googleusercontent.com",
           "client_type": 3

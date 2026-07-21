@@ -27,7 +27,7 @@ namespace OrangePulse.Editor
             PlayerSettings.productName = "Orange Football";
             PlayerSettings.companyName = "Orange Football Studio";
             PlayerSettings.bundleVersion = "1.5.0";
-            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.loola181.orangefootball");
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "app.orangefootball.fans");
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
             PlayerSettings.statusBarHidden = false;
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;

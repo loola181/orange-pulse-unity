@@ -15,7 +15,7 @@ def hasReleaseSigning = releaseKeystorePath && releaseKeystorePassword && releas
 def configuredNdkPath = System.getenv('ANDROID_NDK_HOME')
 
 android {
-    namespace "com.loola181.orangefootball"
+    namespace "app.orangefootball.fans"
     if (configuredNdkPath) {
         ndkPath configuredNdkPath
     }
@@ -29,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.loola181.orangefootball"
+        applicationId "app.orangefootball.fans"
         versionName = System.getenv('ORANGE_VERSION_NAME') ?: "1.5.0"
         minSdk 26
         targetSdk 36
