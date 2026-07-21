@@ -15,6 +15,8 @@ namespace OrangePulse.Presentation
         private enum AppTab
         {
             Pulse,
+            Results,
+            Standings,
             News,
             Profile
         }
@@ -24,18 +26,26 @@ namespace OrangePulse.Presentation
         private readonly List<Texture2D> _downloadedTextures = new();
 
         private MatchFeedGateway _matches;
+        private MatchResultsGateway _results;
+        private StandingsGateway _standings;
         private NewsFeedGateway _news;
-        private CampaignGateway _campaigns;
+        private CampaignGateway _homeCampaign;
+        private CampaignGateway _popupCampaign;
         private ProfileStore _profiles;
         private ImageVault _images;
         private GalleryBridge _gallery;
         private ProfileData _profile;
         private HomePage _homePage;
+        private ResultsPage _resultsPage;
+        private StandingsPage _standingsPage;
         private NewsPage _newsPage;
         private ProfilePage _profilePage;
         private HttpTransport _transport;
         private bool _matchesLoading;
+        private bool _resultsLoading;
+        private bool _standingsLoading;
         private bool _newsLoading;
+        private LeagueSource _activeStandingsLeague = AppEndpoints.FeaturedLeagues[0];
         private NewsSection _activeNews = NewsSection.Football;
         private Sprite _heroSprite;
         private Sprite _iconSprite;
@@ -54,14 +64,17 @@ namespace OrangePulse.Presentation
         private void Start()
         {
             ShowTab(AppTab.Pulse);
-            StartCoroutine(LoadCampaign());
+            StartCoroutine(LoadRemoteCampaigns());
             StartCoroutine(LoadMatches());
+            StartCoroutine(LoadResults());
+            StartCoroutine(LoadStandings(_activeStandingsLeague));
             StartCoroutine(LoadNews(_activeNews));
         }
 
         private void OnDestroy()
         {
             _profiles?.Save(_profile);
+            PopupCampaignView.TryClose();
             foreach (Texture2D texture in _downloadedTextures)
             {
                 if (texture != null) Destroy(texture);
@@ -80,8 +93,11 @@ namespace OrangePulse.Presentation
             _transport = new HttpTransport();
             var cache = new DiskTextCache();
             _matches = new MatchFeedGateway(_transport, cache);
+            _results = new MatchResultsGateway(_transport, cache);
+            _standings = new StandingsGateway(_transport, cache);
             _news = new NewsFeedGateway(_transport, cache);
-            _campaigns = new CampaignGateway();
+            _homeCampaign = new CampaignGateway("home");
+            _popupCampaign = new CampaignGateway("popup", false);
             _profiles = new ProfileStore();
             _images = new ImageVault();
 
@@ -109,10 +125,14 @@ namespace OrangePulse.Presentation
             _iconSprite = VisualComposer.FromTexture(iconTexture, "OrangePulseIcon");
 
             _homePage = new HomePage(ui, pageHost, _heroSprite, OnManualRefresh, OpenExternal);
+            _resultsPage = new ResultsPage(ui, pageHost, () => StartCoroutine(LoadResults()));
+            _standingsPage = new StandingsPage(ui, pageHost, OnStandingsLeagueChanged);
             _newsPage = new NewsPage(ui, pageHost, OnNewsSectionChanged, OpenStory);
             _profilePage = new ProfilePage(ui, pageHost, _iconSprite, () => _gallery.Open(), SaveNickname);
 
             _pages[AppTab.Pulse] = _homePage;
+            _pages[AppTab.Results] = _resultsPage;
+            _pages[AppTab.Standings] = _standingsPage;
             _pages[AppTab.News] = _newsPage;
             _pages[AppTab.Profile] = _profilePage;
             BuildNavigation(ui, safeArea);
@@ -128,13 +148,15 @@ namespace OrangePulse.Presentation
             VisualComposer.SetAnchors(row, Vector2.zero, Vector2.one,
                 new Vector2(22f, 10f), new Vector2(-22f, -10f));
             HorizontalLayoutGroup layout = row.gameObject.AddComponent<HorizontalLayoutGroup>();
-            layout.spacing = 12f;
+            layout.spacing = 4f;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = true;
 
-            AddNavigationButton(ui, row, AppTab.Pulse, "ПУЛЬС");
+            AddNavigationButton(ui, row, AppTab.Pulse, "ГЛАВНАЯ");
+            AddNavigationButton(ui, row, AppTab.Results, "ИТОГИ");
+            AddNavigationButton(ui, row, AppTab.Standings, "ТАБЛИЦА");
             AddNavigationButton(ui, row, AppTab.News, "НОВОСТИ");
             AddNavigationButton(ui, row, AppTab.Profile, "ПРОФИЛЬ");
         }
@@ -142,7 +164,7 @@ namespace OrangePulse.Presentation
         private void AddNavigationButton(VisualComposer ui, Transform parent, AppTab tab, string label)
         {
             Button button = ui.Button(parent, "Nav-" + tab, label, Color.clear,
-                PulsePalette.White, 24, () => ShowTab(tab), false);
+                PulsePalette.White, 19, () => ShowTab(tab), false);
             _navigation[tab] = button;
         }
 
@@ -173,7 +195,7 @@ namespace OrangePulse.Presentation
             _profiles.Save(_profile);
             _profilePage.SetProfile(_profile);
             StartCoroutine(LoadMatches());
-            StartCoroutine(LoadCampaign());
+            StartCoroutine(LoadHomeCampaign());
         }
 
         private IEnumerator LoadMatches()
@@ -188,11 +210,17 @@ namespace OrangePulse.Presentation
             _matchesLoading = false;
         }
 
-        private IEnumerator LoadCampaign()
+        private IEnumerator LoadRemoteCampaigns()
+        {
+            yield return StartCoroutine(LoadHomeCampaign());
+            yield return StartCoroutine(LoadPopupCampaign());
+        }
+
+        private IEnumerator LoadHomeCampaign()
         {
             _homePage.SetCampaign(FallbackCampaign());
             LoadResult<Campaign> result = null;
-            yield return _campaigns.Load(value => result = value);
+            yield return _homeCampaign.Load(value => result = value);
             if (result == null || !result.IsSuccess || result.Data == null) yield break;
 
             _homePage.SetCampaign(result.Data);
@@ -206,6 +234,56 @@ namespace OrangePulse.Presentation
                     _homePage.SetCampaignTexture(image.Data);
                 }
             }
+        }
+
+        private IEnumerator LoadPopupCampaign()
+        {
+            LoadResult<Campaign> result = null;
+            yield return _popupCampaign.Load(value => result = value);
+            if (result == null || !result.IsSuccess || result.Data == null || !result.Data.Enabled) yield break;
+
+            Texture2D artwork = null;
+            if (!string.IsNullOrWhiteSpace(result.Data.ImageUrl))
+            {
+                LoadResult<Texture2D> image = null;
+                yield return _transport.GetTexture(result.Data.ImageUrl, value => image = value);
+                if (image != null && image.IsSuccess && image.Data != null)
+                {
+                    artwork = image.Data;
+                    _downloadedTextures.Add(artwork);
+                }
+            }
+            PopupCampaignView.Open(result.Data, artwork, OpenExternal);
+        }
+
+        private IEnumerator LoadResults()
+        {
+            if (_resultsLoading) yield break;
+            _resultsLoading = true;
+            _resultsPage.ShowLoading();
+            LoadResult<IReadOnlyList<MatchResult>> result = null;
+            yield return _results.LoadFeatured(value => result = value);
+            _resultsPage.Render(result);
+            _resultsLoading = false;
+        }
+
+        private void OnStandingsLeagueChanged(LeagueSource league)
+        {
+            _activeStandingsLeague = league;
+            if (!_standingsLoading) StartCoroutine(LoadStandings(league));
+        }
+
+        private IEnumerator LoadStandings(LeagueSource league)
+        {
+            if (_standingsLoading) yield break;
+            _standingsLoading = true;
+            _standingsPage.ShowLoading();
+            LoadResult<IReadOnlyList<StandingRow>> result = null;
+            yield return _standings.Load(league, value => result = value);
+            _standingsPage.Render(league, result);
+            _standingsLoading = false;
+            if (_activeStandingsLeague.Id != league.Id)
+                StartCoroutine(LoadStandings(_activeStandingsLeague));
         }
 
         private void OnNewsSectionChanged(NewsSection section)

@@ -25,6 +25,20 @@ namespace OrangePulse.Data
             "https://www.thesportsdb.com/league/4328-English-Premier-League";
 
         private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(4);
+        private readonly string _parameterPrefix;
+        private readonly bool _defaultEnabled;
+
+        public CampaignGateway(string channelKey = "home", bool defaultEnabled = true)
+        {
+            if (string.IsNullOrWhiteSpace(channelKey)) throw new ArgumentException("channelKey is required");
+            foreach (char symbol in channelKey)
+            {
+                if (!char.IsLetterOrDigit(symbol) && symbol != '_')
+                    throw new ArgumentException("channelKey contains unsupported symbols");
+            }
+            _parameterPrefix = $"orange_football_{channelKey.ToLowerInvariant()}_";
+            _defaultEnabled = defaultEnabled;
+        }
 
         public IEnumerator Load(Action<LoadResult<Campaign>> finished)
         {
@@ -55,7 +69,9 @@ namespace OrangePulse.Data
             string clickUrl,
             string imageUrl,
             string title,
-            string subtitle)
+            string subtitle,
+            string imageRevision = "builtin-v1",
+            string displayMode = "background")
         {
             string action = (clickAction ?? string.Empty).Trim().ToLowerInvariant();
             string safeActionUrl = action == "url" && IsSafeHttps(clickUrl) ? clickUrl : LeagueUrl;
@@ -71,11 +87,13 @@ namespace OrangePulse.Data
                     : subtitle.Trim(),
                 ButtonLabel = action == "url" ? "ОТКРЫТЬ" : "СМОТРЕТЬ МАТЧИ",
                 ButtonUrl = safeActionUrl,
-                ImageUrl = safeImageUrl
+                ImageUrl = safeImageUrl,
+                ImageRevision = string.IsNullOrWhiteSpace(imageRevision) ? "builtin-v1" : imageRevision.Trim(),
+                DisplayMode = NormalizeDisplayMode(displayMode, safeImageUrl)
             };
         }
 
-        private static async Task<Campaign> FetchCampaign()
+        private async Task<Campaign> FetchCampaign()
         {
             DependencyStatus dependencies = await CompleteWithin(
                 FirebaseApp.CheckAndFixDependenciesAsync());
@@ -101,27 +119,31 @@ namespace OrangePulse.Data
             }
 
             return MapValues(
-                config.GetValue(EnabledKey).BooleanValue,
-                config.GetValue(LaunchEnabledKey).BooleanValue,
-                config.GetValue(ClickActionKey).StringValue,
-                config.GetValue(ClickUrlKey).StringValue,
-                config.GetValue(ImageUrlKey).StringValue,
-                config.GetValue(TitleKey).StringValue,
-                config.GetValue(SubtitleKey).StringValue);
+                config.GetValue(Key("promo_enabled")).BooleanValue,
+                config.GetValue(Key("promo_launch_enabled")).BooleanValue,
+                config.GetValue(Key("promo_click_action")).StringValue,
+                config.GetValue(Key("promo_click_url")).StringValue,
+                config.GetValue(Key("promo_image_url")).StringValue,
+                config.GetValue(Key("promo_title")).StringValue,
+                config.GetValue(Key("promo_subtitle")).StringValue,
+                config.GetValue(Key("promo_image_revision")).StringValue,
+                config.GetValue(Key("promo_display_mode")).StringValue);
         }
 
-        private static Dictionary<string, object> DefaultValues() => new()
+        private Dictionary<string, object> DefaultValues() => new()
         {
-            { EnabledKey, true },
-            { LaunchEnabledKey, true },
-            { ClickActionKey, "url" },
-            { ClickUrlKey, LeagueUrl },
-            { ImageUrlKey, string.Empty },
-            { ImageRevisionKey, "builtin-v1" },
-            { TitleKey, "Главный матч недели" },
-            { SubtitleKey, "Расписание и новости футбола в одном приложении." },
-            { DisplayModeKey, "background" }
+            { Key("promo_enabled"), _defaultEnabled },
+            { Key("promo_launch_enabled"), _defaultEnabled },
+            { Key("promo_click_action"), "url" },
+            { Key("promo_click_url"), LeagueUrl },
+            { Key("promo_image_url"), string.Empty },
+            { Key("promo_image_revision"), "builtin-v1" },
+            { Key("promo_title"), "Главный матч недели" },
+            { Key("promo_subtitle"), "Расписание и новости футбола в одном приложении." },
+            { Key("promo_display_mode"), "background" }
         };
+
+        private string Key(string suffix) => _parameterPrefix + suffix;
 
         private static async Task CompleteWithin(Task operation)
         {
@@ -139,5 +161,12 @@ namespace OrangePulse.Data
 
         private static bool IsSafeHttps(string value) =>
             Uri.TryCreate(value, UriKind.Absolute, out Uri uri) && uri.Scheme == Uri.UriSchemeHttps;
+
+        private static string NormalizeDisplayMode(string value, string imageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl)) return "template";
+            string normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
+            return normalized == "full_banner" || normalized == "background" ? normalized : "template";
+        }
     }
 }

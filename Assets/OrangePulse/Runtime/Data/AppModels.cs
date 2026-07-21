@@ -22,6 +22,8 @@ namespace OrangePulse.Data
         public string strAwayTeamBadge;
         public string strVenue;
         public string strStatus;
+        public string intHomeScore;
+        public string intAwayScore;
     }
 
     public sealed class MatchSummary
@@ -35,6 +37,52 @@ namespace OrangePulse.Data
         public string AwayBadgeUrl;
         public string Venue;
         public DateTime KickoffUtc;
+    }
+
+    public sealed class MatchResult
+    {
+        public string Id;
+        public string League;
+        public string Region;
+        public string HomeTeam;
+        public string AwayTeam;
+        public int HomeScore;
+        public int AwayScore;
+        public string Status;
+        public DateTime PlayedUtc;
+    }
+
+    [Serializable]
+    public sealed class LeagueTableEnvelope
+    {
+        public LeagueTableDto[] table;
+    }
+
+    [Serializable]
+    public sealed class LeagueTableDto
+    {
+        public string intRank;
+        public string strTeam;
+        public string strBadge;
+        public string intPlayed;
+        public string intWin;
+        public string intDraw;
+        public string intLoss;
+        public string intGoalDifference;
+        public string intPoints;
+    }
+
+    public sealed class StandingRow
+    {
+        public int Rank;
+        public string Team;
+        public string BadgeUrl;
+        public int Played;
+        public int Won;
+        public int Drawn;
+        public int Lost;
+        public int GoalDifference;
+        public int Points;
     }
 
     public sealed class NewsStory
@@ -55,6 +103,8 @@ namespace OrangePulse.Data
         public string ButtonLabel;
         public string ButtonUrl;
         public string ImageUrl;
+        public string ImageRevision;
+        public string DisplayMode;
     }
 
     [Serializable]

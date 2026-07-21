@@ -13,6 +13,14 @@ namespace OrangePulse.Core
         public static string MatchesFor(string leagueId) =>
             $"{SportsApiRoot}/eventsnextleague.php?id={leagueId}";
 
+        public static string ResultsFor(string leagueId) =>
+            $"{SportsApiRoot}/eventspastleague.php?id={leagueId}";
+
+        public static string StandingsFor(string leagueId, string season = null) =>
+            string.IsNullOrWhiteSpace(season)
+                ? $"{SportsApiRoot}/lookuptable.php?l={leagueId}"
+                : $"{SportsApiRoot}/lookuptable.php?l={leagueId}&s={season}";
+
         public static string NewsFor(NewsSection section) => section switch
         {
             NewsSection.Football => "https://feeds.bbci.co.uk/sport/football/rss.xml",
