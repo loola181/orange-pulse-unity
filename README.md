@@ -49,6 +49,8 @@
 APK создаётся в `Build/OrangeFootball-dev.apk`. Идентификатор Android-приложения:
 `app.orangefootball.fans`.
 
+Политика конфиденциальности: [loola181.github.io/orange-pulse-unity/privacy-policy.html](https://loola181.github.io/orange-pulse-unity/privacy-policy.html).
+
 ## Структура
 
 ```text

@@ -144,8 +144,8 @@ namespace OrangePulse.Presentation
             _standingsPage = new StandingsPage(ui, pageHost, _clubBadges, OnStandingsLeagueChanged,
                 OpenScorers);
             _newsPage = new NewsPage(ui, pageHost, OnNewsSectionChanged, OpenStory);
-            _profilePage = new ProfilePage(ui, pageHost, _iconSprite, () => _gallery.Open(), SaveNickname,
-                SaveFavoriteLeague);
+            _profilePage = new ProfilePage(ui, pageHost, _iconSprite, () => _gallery.Open(),
+                () => OpenExternal(AppEndpoints.PrivacyPolicyUrl), SaveNickname, SaveFavoriteLeague);
             _matchCenterPage = new MatchCenterPage(ui, pageHost, _clubBadges, () => ShowTab(AppTab.Pulse));
             _scorersPage = new ScorersPage(ui, pageHost, _clubBadges, () => ShowTab(AppTab.Standings),
                 OnScorersLeagueChanged);
