@@ -10,15 +10,20 @@ namespace OrangePulse.Presentation.Pages
     public sealed class StandingsPage : PageSurface
     {
         private readonly VisualComposer _ui;
+        private readonly ClubBadgeLoader _clubBadges;
         private readonly Action<LeagueSource> _leagueChanged;
+        private readonly Action _openScorers;
         private readonly Dictionary<string, Button> _filters = new();
         private readonly RectTransform _rows;
         private string _activeLeagueId;
 
-        public StandingsPage(VisualComposer ui, Transform parent, Action<LeagueSource> leagueChanged)
+        public StandingsPage(VisualComposer ui, Transform parent, ClubBadgeLoader clubBadges,
+            Action<LeagueSource> leagueChanged, Action openScorers)
         {
             _ui = ui;
+            _clubBadges = clubBadges;
             _leagueChanged = leagueChanged;
+            _openScorers = openScorers;
             Root = ui.Panel(parent, "StandingsPage", PulsePalette.Paper).rectTransform;
             VisualComposer.Stretch(Root);
             BuildHeader();
@@ -89,11 +94,11 @@ namespace OrangePulse.Presentation.Pages
             Text title = _ui.Label(header.transform, "Title", "ГОНКА ЗА ТИТУЛ", 44,
                 PulsePalette.White, TextAnchor.MiddleLeft, FontStyle.Bold);
             VisualComposer.SetAnchors(title.rectTransform, Vector2.zero, Vector2.one,
-                new Vector2(42f, 32f), new Vector2(-40f, -24f));
-            Text badge = _ui.Label(header.transform, "Badge", "ВСЯ ЛИГА", 22,
-                PulsePalette.Orange, TextAnchor.MiddleRight, FontStyle.Bold);
-            VisualComposer.SetAnchors(badge.rectTransform, new Vector2(1f, 0f), Vector2.one,
-                new Vector2(-220f, 32f), new Vector2(-42f, -24f));
+                new Vector2(42f, 32f), new Vector2(-350f, -24f));
+            Button scorers = _ui.Button(header.transform, "Scorers", "БОМБАРДИРЫ", PulsePalette.Orange,
+                PulsePalette.Ink, 20, _openScorers);
+            VisualComposer.SetAnchors(scorers.GetComponent<RectTransform>(), new Vector2(1f, 0.5f),
+                new Vector2(1f, 0.5f), new Vector2(-320f, -34f), new Vector2(-38f, 34f));
         }
 
         private void BuildFilters()
@@ -127,7 +132,7 @@ namespace OrangePulse.Presentation.Pages
             Image header = _ui.Panel(_rows, "Columns", PulsePalette.Ink, true);
             VisualComposer.Size(header.gameObject, 72f);
             AddCell(header.transform, "#", 0f, 0.09f, TextAnchor.MiddleCenter, PulsePalette.Orange, 22);
-            AddCell(header.transform, "КОМАНДА", 0.09f, 0.54f, TextAnchor.MiddleLeft, PulsePalette.White, 20);
+            AddCell(header.transform, "КОМАНДА", 0.15f, 0.54f, TextAnchor.MiddleLeft, PulsePalette.White, 20);
             AddCell(header.transform, "И", 0.54f, 0.64f, TextAnchor.MiddleCenter, PulsePalette.Muted, 20);
             AddCell(header.transform, "В", 0.64f, 0.74f, TextAnchor.MiddleCenter, PulsePalette.Muted, 20);
             AddCell(header.transform, "Н", 0.74f, 0.84f, TextAnchor.MiddleCenter, PulsePalette.Muted, 20);
@@ -142,7 +147,19 @@ namespace OrangePulse.Presentation.Pages
             VisualComposer.Size(card.gameObject, 108f);
             AddCell(card.transform, row.Rank.ToString(), 0f, 0.09f, TextAnchor.MiddleCenter,
                 row.Rank <= 3 ? PulsePalette.Orange : PulsePalette.Muted, 27);
-            AddCell(card.transform, row.Team, 0.09f, 0.54f, TextAnchor.MiddleLeft, PulsePalette.Ink, 25);
+            Image holder = _ui.Panel(card.transform, "ClubBadge", PulsePalette.Paper, true);
+            holder.raycastTarget = false;
+            VisualComposer.SetAnchors(holder.rectTransform, new Vector2(0.09f, 0.5f),
+                new Vector2(0.09f, 0.5f), new Vector2(8f, -28f), new Vector2(64f, 28f));
+            Image logo = _ui.Panel(holder.transform, "Logo", Color.clear);
+            VisualComposer.SetAnchors(logo.rectTransform, Vector2.zero, Vector2.one,
+                new Vector2(7f, 7f), new Vector2(-7f, -7f));
+            _clubBadges.Load(logo, row.BadgeUrl);
+
+            Text team = _ui.Label(card.transform, "Team", row.Team, 25, PulsePalette.Ink,
+                TextAnchor.MiddleLeft, FontStyle.Bold);
+            VisualComposer.SetAnchors(team.rectTransform, new Vector2(0.09f, 0f),
+                new Vector2(0.54f, 1f), new Vector2(74f, 4f), new Vector2(-8f, -4f));
             AddCell(card.transform, row.Played.ToString(), 0.54f, 0.64f, TextAnchor.MiddleCenter, PulsePalette.Muted, 22);
             AddCell(card.transform, row.Won.ToString(), 0.64f, 0.74f, TextAnchor.MiddleCenter, PulsePalette.Success, 22);
             AddCell(card.transform, row.Drawn.ToString(), 0.74f, 0.84f, TextAnchor.MiddleCenter, PulsePalette.Muted, 22);

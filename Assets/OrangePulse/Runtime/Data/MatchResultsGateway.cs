@@ -85,6 +85,8 @@ namespace OrangePulse.Data
                     Region = league.Region,
                     HomeTeam = source.strHomeTeam ?? "Home",
                     AwayTeam = source.strAwayTeam ?? "Away",
+                    HomeBadgeUrl = source.strHomeTeamBadge ?? string.Empty,
+                    AwayBadgeUrl = source.strAwayTeamBadge ?? string.Empty,
                     HomeScore = homeScore,
                     AwayScore = awayScore,
                     Status = NormalizeStatus(source.strStatus),

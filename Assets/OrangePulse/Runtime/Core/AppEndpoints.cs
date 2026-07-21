@@ -22,6 +22,18 @@ namespace OrangePulse.Core
         public static string StandingsFor(string footballApiLeagueId, int season) =>
             $"{FootballDataRoot}/standings?league={footballApiLeagueId}&season={season}";
 
+        public static string TopScorersFor(string footballApiLeagueId, int season) =>
+            $"{FootballDataRoot}/players/topscorers?league={footballApiLeagueId}&season={season}";
+
+        public static string FixtureLineups(string fixtureId) =>
+            $"{FootballDataRoot}/fixtures/lineups?fixture={fixtureId}";
+
+        public static string FixtureStatistics(string fixtureId) =>
+            $"{FootballDataRoot}/fixtures/statistics?fixture={fixtureId}";
+
+        public static string FixtureEvents(string fixtureId) =>
+            $"{FootballDataRoot}/fixtures/events?fixture={fixtureId}";
+
         public static string NewsFor(NewsSection section) => section switch
         {
             NewsSection.Football => "https://feeds.bbci.co.uk/sport/football/rss.xml",

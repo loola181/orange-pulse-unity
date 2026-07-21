@@ -30,6 +30,8 @@ namespace OrangePulse.Presentation
         private MatchFeedGateway _matches;
         private MatchResultsGateway _results;
         private StandingsGateway _standings;
+        private TopScorersGateway _topScorers;
+        private MatchCenterGateway _matchCenter;
         private NewsFeedGateway _news;
         private CampaignGateway _homeCampaign;
         private CampaignGateway _popupCampaign;
@@ -40,15 +42,21 @@ namespace OrangePulse.Presentation
         private HomePage _homePage;
         private ResultsPage _resultsPage;
         private StandingsPage _standingsPage;
+        private ScorersPage _scorersPage;
+        private MatchCenterPage _matchCenterPage;
         private NewsPage _newsPage;
         private ProfilePage _profilePage;
         private HttpTransport _transport;
+        private ClubBadgeLoader _clubBadges;
         private bool _matchesLoading;
         private bool _resultsLoading;
         private bool _standingsLoading;
+        private bool _topScorersLoading;
         private bool _newsLoading;
         private LeagueSource _activeStandingsLeague = AppEndpoints.FeaturedLeagues[0];
+        private LeagueSource _activeScorersLeague = AppEndpoints.FeaturedLeagues[0];
         private NewsSection _activeNews = NewsSection.Football;
+        private string _activeMatchCenterId;
         private Sprite _heroSprite;
         private Sprite _iconSprite;
 
@@ -93,10 +101,14 @@ namespace OrangePulse.Presentation
         private void BuildServices()
         {
             _transport = new HttpTransport();
+            _clubBadges = gameObject.AddComponent<ClubBadgeLoader>();
+            _clubBadges.Initialize(_transport);
             var cache = new DiskTextCache();
             _matches = new MatchFeedGateway(_transport, cache);
             _results = new MatchResultsGateway(_transport, cache);
             _standings = new StandingsGateway(_transport, cache);
+            _topScorers = new TopScorersGateway(_transport, cache);
+            _matchCenter = new MatchCenterGateway(_transport, cache);
             _news = new NewsFeedGateway(_transport, cache);
             _homeCampaign = new CampaignGateway("home");
             _popupCampaign = new CampaignGateway("popup", false);
@@ -126,17 +138,25 @@ namespace OrangePulse.Presentation
             _heroSprite = VisualComposer.FromTexture(heroTexture, "LocalHero");
             _iconSprite = VisualComposer.FromTexture(iconTexture, "OrangePulseIcon");
 
-            _homePage = new HomePage(ui, pageHost, _heroSprite, OnManualRefresh, OpenExternal);
-            _resultsPage = new ResultsPage(ui, pageHost, () => StartCoroutine(LoadResults()));
-            _standingsPage = new StandingsPage(ui, pageHost, OnStandingsLeagueChanged);
+            _homePage = new HomePage(ui, pageHost, _heroSprite, _clubBadges, OnManualRefresh,
+                OpenExternal, OpenMatchCenter);
+            _resultsPage = new ResultsPage(ui, pageHost, _clubBadges, () => StartCoroutine(LoadResults()));
+            _standingsPage = new StandingsPage(ui, pageHost, _clubBadges, OnStandingsLeagueChanged,
+                OpenScorers);
             _newsPage = new NewsPage(ui, pageHost, OnNewsSectionChanged, OpenStory);
-            _profilePage = new ProfilePage(ui, pageHost, _iconSprite, () => _gallery.Open(), SaveNickname);
+            _profilePage = new ProfilePage(ui, pageHost, _iconSprite, () => _gallery.Open(), SaveNickname,
+                SaveFavoriteLeague);
+            _matchCenterPage = new MatchCenterPage(ui, pageHost, _clubBadges, () => ShowTab(AppTab.Pulse));
+            _scorersPage = new ScorersPage(ui, pageHost, _clubBadges, () => ShowTab(AppTab.Standings),
+                OnScorersLeagueChanged);
 
             _pages[AppTab.Pulse] = _homePage;
             _pages[AppTab.Results] = _resultsPage;
             _pages[AppTab.Standings] = _standingsPage;
             _pages[AppTab.News] = _newsPage;
             _pages[AppTab.Profile] = _profilePage;
+            _matchCenterPage.SetVisible(false);
+            _scorersPage.SetVisible(false);
             BuildNavigation(ui, safeArea);
         }
 
@@ -172,9 +192,17 @@ namespace OrangePulse.Presentation
 
         private void ShowTab(AppTab tab)
         {
+            _activeMatchCenterId = null;
+            _matchCenterPage?.SetVisible(false);
+            _scorersPage?.SetVisible(false);
             foreach (KeyValuePair<AppTab, PageSurface> page in _pages)
                 page.Value.SetVisible(page.Key == tab);
 
+            SetNavigationSelection(tab);
+        }
+
+        private void SetNavigationSelection(AppTab tab)
+        {
             foreach (KeyValuePair<AppTab, Button> item in _navigation)
             {
                 Text label = item.Value.GetComponentInChildren<Text>();
@@ -182,9 +210,22 @@ namespace OrangePulse.Presentation
             }
         }
 
+        private void ShowOverlay(PageSurface overlay, AppTab navigationTab)
+        {
+            foreach (PageSurface page in _pages.Values) page.SetVisible(false);
+            _matchCenterPage.SetVisible(ReferenceEquals(overlay, _matchCenterPage));
+            _scorersPage.SetVisible(ReferenceEquals(overlay, _scorersPage));
+            SetNavigationSelection(navigationTab);
+        }
+
         private void RestoreProfile()
         {
             _profile = _profiles.Load();
+            LeagueSource favoriteLeague = ResolveLeague(_profile.favoriteLeagueId);
+            _activeStandingsLeague = favoriteLeague;
+            _activeScorersLeague = favoriteLeague;
+            _standingsPage.SelectLeague(favoriteLeague.Id, false);
+            _scorersPage.SelectLeague(favoriteLeague.Id, false);
             _profilePage.SetProfile(_profile);
             if (_images.TryLoad(_profile.avatarPath, out Texture2D texture))
                 _profilePage.SetAvatar(texture);
@@ -291,6 +332,53 @@ namespace OrangePulse.Presentation
                 StartCoroutine(LoadStandings(_activeStandingsLeague));
         }
 
+        private void OpenScorers()
+        {
+            _profile.openedScorers++;
+            SaveProfileActivity();
+            _activeScorersLeague = _activeStandingsLeague;
+            _scorersPage.SelectLeague(_activeScorersLeague.Id, false);
+            ShowOverlay(_scorersPage, AppTab.Standings);
+            if (!_topScorersLoading) StartCoroutine(LoadTopScorers(_activeScorersLeague));
+        }
+
+        private void OnScorersLeagueChanged(LeagueSource league)
+        {
+            _activeScorersLeague = league;
+            if (!_topScorersLoading) StartCoroutine(LoadTopScorers(league));
+        }
+
+        private IEnumerator LoadTopScorers(LeagueSource league)
+        {
+            if (_topScorersLoading) yield break;
+            _topScorersLoading = true;
+            _scorersPage.ShowLoading();
+            LoadResult<IReadOnlyList<ScorerRow>> result = null;
+            yield return _topScorers.Load(league, value => result = value);
+            _scorersPage.Render(league, result);
+            _topScorersLoading = false;
+            if (_activeScorersLeague.Id != league.Id)
+                StartCoroutine(LoadTopScorers(_activeScorersLeague));
+        }
+
+        private void OpenMatchCenter(MatchSummary match)
+        {
+            if (match == null) return;
+            _profile.openedMatchCenters++;
+            SaveProfileActivity();
+            _activeMatchCenterId = match.Id;
+            ShowOverlay(_matchCenterPage, AppTab.Pulse);
+            _matchCenterPage.ShowLoading(match);
+            StartCoroutine(LoadMatchCenter(match));
+        }
+
+        private IEnumerator LoadMatchCenter(MatchSummary match)
+        {
+            LoadResult<MatchCenterData> result = null;
+            yield return _matchCenter.Load(match.Id, value => result = value);
+            if (_activeMatchCenterId == match.Id) _matchCenterPage.Render(match, result);
+        }
+
         private void OnNewsSectionChanged(NewsSection section)
         {
             _activeNews = section;
@@ -331,6 +419,36 @@ namespace OrangePulse.Presentation
             _profiles.Save(_profile);
             _profilePage.SetProfile(_profile);
             _profilePage.ShowMessage("Профиль сохранён");
+        }
+
+        private void SaveFavoriteLeague(string leagueId)
+        {
+            _profile.favoriteLeagueId = ProfileStore.NormalizeLeagueId(leagueId);
+            LeagueSource league = ResolveLeague(_profile.favoriteLeagueId);
+            _activeStandingsLeague = league;
+            _activeScorersLeague = league;
+            _standingsPage.SelectLeague(league.Id, false);
+            _scorersPage.SelectLeague(league.Id, false);
+            _profiles.Save(_profile);
+            _profilePage.SetProfile(_profile);
+            _profilePage.ShowMessage("Любимая лига обновлена");
+            if (!_standingsLoading) StartCoroutine(LoadStandings(league));
+        }
+
+        private void SaveProfileActivity()
+        {
+            _profiles.Save(_profile);
+            _profilePage.SetProfile(_profile);
+        }
+
+        private static LeagueSource ResolveLeague(string leagueId)
+        {
+            string normalized = ProfileStore.NormalizeLeagueId(leagueId);
+            foreach (LeagueSource league in AppEndpoints.FeaturedLeagues)
+            {
+                if (league.Id == normalized) return league;
+            }
+            return AppEndpoints.FeaturedLeagues[0];
         }
 
         private void OnImageSelected(string path)

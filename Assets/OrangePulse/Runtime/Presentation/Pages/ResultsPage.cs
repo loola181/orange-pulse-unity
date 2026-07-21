@@ -10,11 +10,13 @@ namespace OrangePulse.Presentation.Pages
     public sealed class ResultsPage : PageSurface
     {
         private readonly VisualComposer _ui;
+        private readonly ClubBadgeLoader _clubBadges;
         private readonly RectTransform _list;
 
-        public ResultsPage(VisualComposer ui, Transform parent, Action refresh)
+        public ResultsPage(VisualComposer ui, Transform parent, ClubBadgeLoader clubBadges, Action refresh)
         {
             _ui = ui;
+            _clubBadges = clubBadges;
             Root = ui.Panel(parent, "ResultsPage", PulsePalette.Paper).rectTransform;
             VisualComposer.Stretch(Root);
             BuildHeader(refresh);
@@ -92,20 +94,38 @@ namespace OrangePulse.Presentation.Pages
             VisualComposer.SetAnchors(state.rectTransform, new Vector2(1f, 1f), Vector2.one,
                 new Vector2(-360f, -58f), new Vector2(-28f, -16f));
 
+            BuildBadge(card.transform, "HomeBadge", match.HomeBadgeUrl,
+                new Vector2(28f, 108f), new Vector2(82f, 162f));
+            BuildBadge(card.transform, "AwayBadge", match.AwayBadgeUrl,
+                new Vector2(28f, 40f), new Vector2(82f, 94f));
+
             Text home = _ui.Label(card.transform, "Home", match.HomeTeam, 31,
                 PulsePalette.Ink, TextAnchor.MiddleLeft, FontStyle.Bold);
             VisualComposer.SetAnchors(home.rectTransform, Vector2.zero, Vector2.one,
-                new Vector2(30f, 92f), new Vector2(-330f, -70f));
+                new Vector2(94f, 92f), new Vector2(-330f, -70f));
 
             Text away = _ui.Label(card.transform, "Away", match.AwayTeam, 31,
                 PulsePalette.Ink, TextAnchor.MiddleLeft, FontStyle.Bold);
             VisualComposer.SetAnchors(away.rectTransform, Vector2.zero, Vector2.one,
-                new Vector2(30f, 24f), new Vector2(-330f, -138f));
+                new Vector2(94f, 24f), new Vector2(-330f, -138f));
 
             Text score = _ui.Label(card.transform, "Score", $"{match.HomeScore}\n{match.AwayScore}", 40,
                 PulsePalette.Ink, TextAnchor.MiddleCenter, FontStyle.Bold);
             VisualComposer.SetAnchors(score.rectTransform, new Vector2(1f, 0f), Vector2.one,
                 new Vector2(-270f, 28f), new Vector2(-34f, -72f));
+        }
+
+        private void BuildBadge(Transform parent, string name, string url, Vector2 offsetMin,
+            Vector2 offsetMax)
+        {
+            Image holder = _ui.Panel(parent, name, PulsePalette.Paper, true);
+            holder.raycastTarget = false;
+            VisualComposer.SetAnchors(holder.rectTransform, Vector2.zero, Vector2.zero,
+                offsetMin, offsetMax);
+            Image logo = _ui.Panel(holder.transform, "Logo", Color.clear);
+            VisualComposer.SetAnchors(logo.rectTransform, Vector2.zero, Vector2.one,
+                new Vector2(7f, 7f), new Vector2(-7f, -7f));
+            _clubBadges.Load(logo, url);
         }
 
         private void BuildError(string message)
